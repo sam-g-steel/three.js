@@ -82,6 +82,7 @@ vec3 getAmbientLightIrradiance( const in vec3 ambientLightColor ) {
 #if NUM_POINT_LIGHTS > 0
 
 	struct PointLight {
+		vec3 worldPosition;
 		vec3 position;
 		vec3 color;
 		float distance;
@@ -165,7 +166,10 @@ vec3 getAmbientLightIrradiance( const in vec3 ambientLightColor ) {
 
 	struct RectAreaLight {
 		vec3 color;
+		vec3 worldPosition;
 		vec3 position;
+		vec3 worldHalfWidth;
+		vec3 worldHalfHeight;
 		vec3 halfWidth;
 		vec3 halfHeight;
 	};

@@ -57,6 +57,7 @@ function UniformsCache() {
 				case 'PointLight':
 					uniforms = {
 						position: new Vector3(),
+						worldPosition: new Vector3(), // (sam-g-steel) added to support ray-traced shadows and more
 						color: new Color(),
 						distance: 0,
 						decay: 0,
@@ -82,6 +83,9 @@ function UniformsCache() {
 					uniforms = {
 						color: new Color(),
 						position: new Vector3(),
+						worldPosition: new Vector3(), // (sam-g-steel) added to support ray-traced shadows and more
+						worldHalfWidth: new Vector3(), // (sam-g-steel) added to support ray-traced shadows and more
+						worldHalfHeight: new Vector3(), // (sam-g-steel) added to support ray-traced shadows and more
 						halfWidth: new Vector3(),
 						halfHeight: new Vector3()
 						// TODO (abelnation): set RectAreaLight shadow uniforms
@@ -279,6 +283,7 @@ function WebGLLights() {
 				// (b) intensity is the brightness of the light
 				uniforms.color.copy( color ).multiplyScalar( intensity );
 
+				uniforms.worldPosition.setFromMatrixPosition( light.matrixWorld );
 				uniforms.position.setFromMatrixPosition( light.matrixWorld );
 				uniforms.position.applyMatrix4( viewMatrix );
 
@@ -287,10 +292,15 @@ function WebGLLights() {
 				matrix4.copy( light.matrixWorld );
 				matrix4.premultiply( viewMatrix );
 				matrix42.extractRotation( matrix4 );
+				var worldRotation = new Matrix4().extractRotation( light.matrixWorld );
 
 				uniforms.halfWidth.set( light.width * 0.5, 0.0, 0.0 );
 				uniforms.halfHeight.set( 0.0, light.height * 0.5, 0.0 );
+				uniforms.worldHalfWidth.copy( uniforms.halfWidth );
+				uniforms.worldHalfHeight.copy( uniforms.halfHeight );
 
+				uniforms.worldHalfWidth.applyMatrix4( worldRotation );
+				uniforms.worldHalfHeight.applyMatrix4( worldRotation );
 				uniforms.halfWidth.applyMatrix4( matrix42 );
 				uniforms.halfHeight.applyMatrix4( matrix42 );
 
@@ -304,8 +314,8 @@ function WebGLLights() {
 			} else if ( light.isPointLight ) {
 
 				var uniforms = cache.get( light );
-
-				uniforms.position.setFromMatrixPosition( light.matrixWorld );
+				uniforms.worldPosition.setFromMatrixPosition( light.matrixWorld );
+				uniforms.position.copy( uniforms.worldPosition );
 				uniforms.position.applyMatrix4( viewMatrix );
 
 				uniforms.color.copy( light.color ).multiplyScalar( light.intensity );
