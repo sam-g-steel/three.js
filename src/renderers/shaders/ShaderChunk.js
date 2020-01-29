@@ -1,3 +1,4 @@
+import AABB_tools from './ShaderChunk/aabb_tools.glsl.js';
 import alphamap_fragment from './ShaderChunk/alphamap_fragment.glsl.js';
 import alphamap_pars_fragment from './ShaderChunk/alphamap_pars_fragment.glsl.js';
 import alphatest_fragment from './ShaderChunk/alphatest_fragment.glsl.js';
@@ -61,6 +62,7 @@ import metalnessmap_pars_fragment from './ShaderChunk/metalnessmap_pars_fragment
 import morphnormal_vertex from './ShaderChunk/morphnormal_vertex.glsl.js';
 import morphtarget_pars_vertex from './ShaderChunk/morphtarget_pars_vertex.glsl.js';
 import morphtarget_vertex from './ShaderChunk/morphtarget_vertex.glsl.js';
+import noise_functions from './ShaderChunk/noise_functions.glsl.js';
 import normal_fragment_begin from './ShaderChunk/normal_fragment_begin.glsl.js';
 import normal_fragment_maps from './ShaderChunk/normal_fragment_maps.glsl.js';
 import normalmap_pars_fragment from './ShaderChunk/normalmap_pars_fragment.glsl.js';
@@ -128,6 +130,7 @@ import sprite_frag from './ShaderLib/sprite_frag.glsl.js';
 import sprite_vert from './ShaderLib/sprite_vert.glsl.js';
 
 export var ShaderChunk = {
+	AABB_tools: AABB_tools,
 	alphamap_fragment: alphamap_fragment,
 	alphamap_pars_fragment: alphamap_pars_fragment,
 	alphatest_fragment: alphatest_fragment,
@@ -191,6 +194,7 @@ export var ShaderChunk = {
 	morphnormal_vertex: morphnormal_vertex,
 	morphtarget_pars_vertex: morphtarget_pars_vertex,
 	morphtarget_vertex: morphtarget_vertex,
+	noise_functions: noise_functions,
 	normal_fragment_begin: normal_fragment_begin,
 	normal_fragment_maps: normal_fragment_maps,
 	normalmap_pars_fragment: normalmap_pars_fragment,
