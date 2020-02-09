@@ -14164,6 +14164,9 @@
 
 	var bumpmap_pars_fragment = "#ifdef USE_BUMPMAP\n\tuniform sampler2D bumpMap;\n\tuniform float bumpScale;\n\tvec2 dHdxy_fwd() {\n\t\tvec2 dSTdx = dFdx( vUv );\n\t\tvec2 dSTdy = dFdy( vUv );\n\t\tfloat Hll = bumpScale * texture2D( bumpMap, vUv ).x;\n\t\tfloat dBx = bumpScale * texture2D( bumpMap, vUv + dSTdx ).x - Hll;\n\t\tfloat dBy = bumpScale * texture2D( bumpMap, vUv + dSTdy ).x - Hll;\n\t\treturn vec2( dBx, dBy );\n\t}\n\tvec3 perturbNormalArb( vec3 surf_pos, vec3 surf_norm, vec2 dHdxy ) {\n\t\tvec3 vSigmaX = vec3( dFdx( surf_pos.x ), dFdx( surf_pos.y ), dFdx( surf_pos.z ) );\n\t\tvec3 vSigmaY = vec3( dFdy( surf_pos.x ), dFdy( surf_pos.y ), dFdy( surf_pos.z ) );\n\t\tvec3 vN = surf_norm;\n\t\tvec3 R1 = cross( vSigmaY, vN );\n\t\tvec3 R2 = cross( vN, vSigmaX );\n\t\tfloat fDet = dot( vSigmaX, R1 );\n\t\tfDet *= ( float( gl_FrontFacing ) * 2.0 - 1.0 );\n\t\tvec3 vGrad = sign( fDet ) * ( dHdxy.x * R1 + dHdxy.y * R2 );\n\t\treturn normalize( abs( fDet ) * surf_norm - vGrad );\n\t}\n#endif";
 
+	var bvh_intersect_functions = "#define INFINITY         1000000.0\nfloat triangleIntersect( vec3 v0, vec3 v1, vec3 v2, vec3 r_origin, vec3 r_direction )\n{\n    vec3 edge1 = v1 - v0;\n    vec3 edge2 = v2 - v0;\n    vec3 pvec = cross(r_direction, edge2);\n    float det = 1.0 / dot(edge1, pvec);\n    vec3 tvec = r_origin - v0;\n    float u = dot(tvec, pvec) * det;\n    if (u < 0.0 || u > 1.0)\n        return INFINITY;\n    vec3 qvec = cross(tvec, edge1);\n    float v = dot(r_direction, qvec) * det;\n    if (v < 0.0 || u + v > 1.0)\n        return INFINITY;\n    return dot(edge2, qvec) * det;\n}\n    \nbool rayLeafCollision(in AABB node, vec3 start, vec3 dir){\n    bool collision = false;\n    int leafPointer = 0;\n    do{\n        if(leafPointer==2){\n            loadAABBtris(node, bvhTexture);\n        }\n    \n        int triIndex = node.tris[leafPointer];\n        if(triIndex == 0) break;\n        \n        int triTextureIndex = triIndex * 3;\n        vec3 p1 = texelFetch(triTexture, pixelIndexToUV(triTextureIndex  ), 0).rgb;\n        vec3 p2 = texelFetch(triTexture, pixelIndexToUV(triTextureIndex+1), 0).rgb;\n        vec3 p3 = texelFetch(triTexture, pixelIndexToUV(triTextureIndex+2), 0).rgb;\n        \n        float distance = triangleIntersect(p1, p2, p3, start, dir);\n        collision = distance < INFINITY && distance > 0.00125;\n        \n    }while(++leafPointer < 6 && !collision);\n    \n    return collision;\n}\nbool rayTrisCollision(vec3 start, vec3 dir){\n    bool collision = false;\n    int leafPointer = 0;\n    do{\n        int triTextureIndex = leafPointer++ * 3;\n        vec3 p1 = texelFetch(triTexture, ivec2(triTextureIndex % 512, 0 ), 0).rgb;\n        vec3 p2 = texelFetch(triTexture, ivec2((triTextureIndex + 1) % 512, 0 ), 0).rgb;\n        vec3 p3 = texelFetch(triTexture, ivec2((triTextureIndex + 2) % 512, 0 ), 0).rgb;\n        float distance = triangleIntersect(p1, p2, p3, start, dir);\n        collision = distance < INFINITY && distance > 0.00007;\n    }while(leafPointer < 100 && !collision);\n    return collision;\n}\nfloat testRay(vec3 start, vec3 dir){\n    int aabbStack[16]; aabbStack[0] = 0;\n    int aabbStackPointer = 0;\n    float result = 0.0;\n    float collisionTests = 0.0;\n    vec3 invRayDir = vec3(1) / dir;\n    \n    do{\n        AABB node = fetchAABB(aabbStack[aabbStackPointer], bvhTexture);\n        bool collision = intersectAABB_Fast(start, dir, invRayDir, node);\n        collisionTests++;\n        \n        if(collision) {\n            if(node.left > 0){\n                aabbStack[aabbStackPointer] = node.left;                aabbStackPointer++;\n                aabbStack[aabbStackPointer] = node.right;            }else{\n                bool leafHit = rayLeafCollision(node, start, dir);\n                if(leafHit){\n                    return 1.0;\n                }else{\n                    aabbStackPointer--;\n                }\n            }\n        }else{\n            aabbStackPointer--;\n        }\n        \n    }while( aabbStackPointer >= 0 && aabbStackPointer < 16);\n      \n    return 0.0;\n}"
+	;
+
 	var clipping_planes_fragment = "#if NUM_CLIPPING_PLANES > 0\n\tvec4 plane;\n\t#pragma unroll_loop\n\tfor ( int i = 0; i < UNION_CLIPPING_PLANES; i ++ ) {\n\t\tplane = clippingPlanes[ i ];\n\t\tif ( dot( vViewPosition, plane.xyz ) > plane.w ) discard;\n\t}\n\t#if UNION_CLIPPING_PLANES < NUM_CLIPPING_PLANES\n\t\tbool clipped = true;\n\t\t#pragma unroll_loop\n\t\tfor ( int i = UNION_CLIPPING_PLANES; i < NUM_CLIPPING_PLANES; i ++ ) {\n\t\t\tplane = clippingPlanes[ i ];\n\t\t\tclipped = ( dot( vViewPosition, plane.xyz ) > plane.w ) && clipped;\n\t\t}\n\t\tif ( clipped ) discard;\n\t#endif\n#endif";
 
 	var clipping_planes_pars_fragment = "#if NUM_CLIPPING_PLANES > 0\n\t#if ! defined( STANDARD ) && ! defined( PHONG ) && ! defined( MATCAP )\n\t\tvarying vec3 vViewPosition;\n\t#endif\n\tuniform vec4 clippingPlanes[ NUM_CLIPPING_PLANES ];\n#endif";
@@ -14413,6 +14416,7 @@
 		beginnormal_vertex: beginnormal_vertex,
 		bsdfs: bsdfs,
 		bumpmap_pars_fragment: bumpmap_pars_fragment,
+		bvh_intersect_functions: bvh_intersect_functions,
 		clipping_planes_fragment: clipping_planes_fragment,
 		clipping_planes_pars_fragment: clipping_planes_pars_fragment,
 		clipping_planes_pars_vertex: clipping_planes_pars_vertex,
@@ -26021,6 +26025,63 @@
 					} else {
 
 						console.error( 'THREE.WebGLRenderer.readRenderTargetPixels: readPixels from renderTarget failed. Framebuffer not complete.' );
+
+					}
+
+				} finally {
+
+					if ( restore ) {
+
+						_gl.bindFramebuffer( 36160, _currentFramebuffer );
+
+					}
+
+				}
+
+			}
+
+		};
+
+
+		this.readRenderTargetPixels_noValidate = function ( renderTarget, x, y, width, height, buffer, activeCubeFaceIndex ) {
+
+			if ( ! ( renderTarget && renderTarget.isWebGLRenderTarget ) ) {
+
+				console.error( 'THREE.WebGLRenderer.readRenderTargetPixels: renderTarget is not THREE.WebGLRenderTarget.' );
+				return;
+
+			}
+
+			var framebuffer = properties.get( renderTarget ).__webglFramebuffer;
+
+			if ( renderTarget.isWebGLRenderTargetCube && activeCubeFaceIndex !== undefined ) {
+
+				framebuffer = framebuffer[ activeCubeFaceIndex ];
+
+			}
+
+			if ( framebuffer ) {
+
+				var restore = false;
+
+				if ( framebuffer !== _currentFramebuffer ) {
+
+					_gl.bindFramebuffer( 36160, framebuffer );
+
+					restore = true;
+
+				}
+
+				try {
+
+					var texture = renderTarget.texture;
+					var textureFormat = texture.format;
+					var textureType = texture.type;
+
+					// the following if statement ensures valid read requests (no out-of-bounds pixels, see #8604)
+					if ( ( x >= 0 && x <= ( renderTarget.width - width ) ) && ( y >= 0 && y <= ( renderTarget.height - height ) ) ) {
+
+						_gl.readPixels( x, y, width, height, utils.convert( textureFormat ), utils.convert( textureType ), buffer );
 
 					}
 

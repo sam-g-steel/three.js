@@ -8,6 +8,7 @@ import begin_vertex from './ShaderChunk/begin_vertex.glsl.js';
 import beginnormal_vertex from './ShaderChunk/beginnormal_vertex.glsl.js';
 import bsdfs from './ShaderChunk/bsdfs.glsl.js';
 import bumpmap_pars_fragment from './ShaderChunk/bumpmap_pars_fragment.glsl.js';
+import bvh_intersect_functions from './ShaderChunk/bvh_intersect_functions.glsl.js';
 import clipping_planes_fragment from './ShaderChunk/clipping_planes_fragment.glsl.js';
 import clipping_planes_pars_fragment from './ShaderChunk/clipping_planes_pars_fragment.glsl.js';
 import clipping_planes_pars_vertex from './ShaderChunk/clipping_planes_pars_vertex.glsl.js';
@@ -140,6 +141,7 @@ export var ShaderChunk = {
 	beginnormal_vertex: beginnormal_vertex,
 	bsdfs: bsdfs,
 	bumpmap_pars_fragment: bumpmap_pars_fragment,
+	bvh_intersect_functions,
 	clipping_planes_fragment: clipping_planes_fragment,
 	clipping_planes_pars_fragment: clipping_planes_pars_fragment,
 	clipping_planes_pars_vertex: clipping_planes_pars_vertex,

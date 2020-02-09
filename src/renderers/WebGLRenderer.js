@@ -2810,6 +2810,63 @@ function WebGLRenderer( parameters ) {
 
 	};
 
+
+	this.readRenderTargetPixels_noValidate = function ( renderTarget, x, y, width, height, buffer, activeCubeFaceIndex ) {
+
+		if ( ! ( renderTarget && renderTarget.isWebGLRenderTarget ) ) {
+
+			console.error( 'THREE.WebGLRenderer.readRenderTargetPixels: renderTarget is not THREE.WebGLRenderTarget.' );
+			return;
+
+		}
+
+		var framebuffer = properties.get( renderTarget ).__webglFramebuffer;
+
+		if ( renderTarget.isWebGLRenderTargetCube && activeCubeFaceIndex !== undefined ) {
+
+			framebuffer = framebuffer[ activeCubeFaceIndex ];
+
+		}
+
+		if ( framebuffer ) {
+
+			var restore = false;
+
+			if ( framebuffer !== _currentFramebuffer ) {
+
+				_gl.bindFramebuffer( _gl.FRAMEBUFFER, framebuffer );
+
+				restore = true;
+
+			}
+
+			try {
+
+				var texture = renderTarget.texture;
+				var textureFormat = texture.format;
+				var textureType = texture.type;
+
+				// the following if statement ensures valid read requests (no out-of-bounds pixels, see #8604)
+				if ( ( x >= 0 && x <= ( renderTarget.width - width ) ) && ( y >= 0 && y <= ( renderTarget.height - height ) ) ) {
+
+					_gl.readPixels( x, y, width, height, utils.convert( textureFormat ), utils.convert( textureType ), buffer );
+
+				}
+
+			} finally {
+
+				if ( restore ) {
+
+					_gl.bindFramebuffer( _gl.FRAMEBUFFER, _currentFramebuffer );
+
+				}
+
+			}
+
+		}
+
+	};
+
 	this.copyFramebufferToTexture = function ( position, texture, level ) {
 
 		if ( level === undefined ) level = 0;

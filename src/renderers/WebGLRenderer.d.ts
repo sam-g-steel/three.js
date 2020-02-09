@@ -402,6 +402,16 @@ export class WebGLRenderer implements Renderer {
 		activeCubeFaceIndex?: number
 	): void;
 
+	readRenderTargetPixels_noValidate(
+		renderTarget: RenderTarget,
+		x: number,
+		y: number,
+		width: number,
+		height: number,
+		buffer: any,
+		activeCubeFaceIndex?: number
+	): void;
+
 	/**
 	 * Copies a region of the currently bound framebuffer into the selected mipmap level of the selected texture.
 	 * This region is defined by the size of the destination texture's mip level, offset by the input position.
